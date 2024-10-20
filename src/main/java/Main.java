@@ -19,19 +19,10 @@ public class Main {
             // Wait for connection from client.
             while (true) {
                 Socket clientSocket = serverSocket.accept();
-                try (InputStreamReader inputStreamReader = new InputStreamReader(clientSocket.getInputStream());
-                     BufferedReader reader = new BufferedReader(inputStreamReader);
-                     OutputStream outputStream = clientSocket.getOutputStream()) {
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        if (line.isEmpty() || line.equals("\n")) {
-                            continue;
-                        }
-                        String response = "+PONG\r\n";
-                        System.out.println(response);
-                        outputStream.write(response.getBytes());
-                        outputStream.flush();
-                    }
+                try (OutputStream outputStream = clientSocket.getOutputStream()) {
+                    String response = "+PONG\r\n";
+                    System.out.println(response);
+                    outputStream.write(response.getBytes());
                 } catch (IOException e) {
                     System.out.println("IOException: " + e.getMessage());
                 }
