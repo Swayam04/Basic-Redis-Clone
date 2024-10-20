@@ -18,20 +18,20 @@ public class Main {
             serverSocket.setReuseAddress(true);
             // Wait for connection from client.
             while (true) {
-                Socket clientSocket = serverSocket.accept();
-                try (InputStreamReader inputStreamReader = new InputStreamReader(clientSocket.getInputStream());
-                     BufferedReader reader = new BufferedReader(inputStreamReader);
-                     OutputStream outputStream = clientSocket.getOutputStream()) {
+                try (Socket clientSocket = serverSocket.accept()) {
+                    OutputStream outputStream = clientSocket.getOutputStream();
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
                     String line;
+
                     while ((line = reader.readLine()) != null) {
-                        if (line.isEmpty()) {
-                            break;
+                        if (!line.trim().isEmpty()) {
+                            System.out.println("Received: " + line);
+                            outputStream.write("+PONG\r\n".getBytes());
+                            outputStream.flush();
                         }
-                        outputStream.write("+PONG\r\n".getBytes());
-                        outputStream.flush();
                     }
                 } catch (IOException e) {
-                    System.out.println("IOException: " + e.getMessage());
+                    System.out.println("IOException while handling client: " + e.getMessage());
                 }
             }
         } catch (IOException e) {
