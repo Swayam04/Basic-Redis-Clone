@@ -22,16 +22,11 @@ public class Main {
                     OutputStream outputStream = clientSocket.getOutputStream();
                     BufferedReader reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
                     String line;
-                    StringBuilder commandBuilder = new StringBuilder();
 
-                    // Read and accumulate until we detect a complete command
                     while ((line = reader.readLine()) != null) {
-                        System.out.println("Received command: " + line);
-                        commandBuilder.append(line).append("\n");
-                        if (commandBuilder.toString().contains("PING")) {
+                        if (!line.trim().isEmpty() && line.contains("PING")) {
                             outputStream.write("+PONG\r\n".getBytes());
                             outputStream.flush();
-                            commandBuilder.setLength(0);
                         }
                     }
                 } catch (IOException e) {
