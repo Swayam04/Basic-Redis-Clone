@@ -20,7 +20,9 @@ public class Main {
                 try {
                     if (clientSocket != null) {
                         OutputStream outputStream = clientSocket.getOutputStream();
-                        outputStream.write("+PONG\r\n".getBytes());
+                        while(clientSocket.getInputStream().available() > 0) {
+                            outputStream.write("+PONG\r\n".getBytes());
+                        }
                         outputStream.flush();
                     }
                 } catch (IOException e) {
