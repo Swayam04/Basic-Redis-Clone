@@ -28,7 +28,6 @@ public class Main {
                             break;
                         }
                         String response = "+PONG\r\n";
-
                         outputStream.write(response.getBytes());
                         outputStream.flush();
                     }
