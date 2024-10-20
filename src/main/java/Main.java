@@ -21,14 +21,19 @@ public class Main {
                 try (Socket clientSocket = serverSocket.accept()) {
                     OutputStream outputStream = clientSocket.getOutputStream();
                     BufferedReader reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-                    String line;
+                    StringBuilder inputBuilder = new StringBuilder();
+                    int character;
 
-                    while ((line = reader.readLine()) != null) {
-                        if (!line.trim().isEmpty()) {
-                            System.out.println("Received: " + line);
+                    while ((character = reader.read()) != -1) {
+                        inputBuilder.append((char) character);
+
+                        if (character == '\n') {
+                            String command = inputBuilder.toString().trim();
+                            inputBuilder.setLength(0);
+                            System.out.println("Received command: " + command);
+
                             outputStream.write("+PONG\r\n".getBytes());
                             outputStream.flush();
-                            break;
                         }
                     }
                 } catch (IOException e) {
