@@ -12,24 +12,25 @@ public class Main {
 
         //  Uncomment this block to pass the first stage
         int port = 6379;
-        try(ServerSocket serverSocket = new ServerSocket(port)) {
+        try (ServerSocket serverSocket = new ServerSocket(port)) {
             // Since the tester restarts your program quite often, setting SO_REUSEADDR
             // ensures that we don't run into 'Address already in use' errors
             serverSocket.setReuseAddress(true);
             // Wait for connection from client.
             while (true) {
                 Socket clientSocket = serverSocket.accept();
-                try {
-                    if (clientSocket != null) {
-                        OutputStream outputStream = clientSocket.getOutputStream();
-                        BufferedReader reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-                        String line;
-                        while((line = reader.readLine()) != null) {
-                            System.out.println("+PONG\r\n");
-                            outputStream.write("+PONG\r\n".getBytes());
+                try (InputStreamReader inputStreamReader = new InputStreamReader(clientSocket.getInputStream());
+                     BufferedReader reader = new BufferedReader(inputStreamReader);
+                     OutputStream outputStream = clientSocket.getOutputStream()) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        if (line.isEmpty()) {
+                            break;
                         }
+                        String response = "+PONG\r\n";
+
+                        outputStream.write(response.getBytes());
                         outputStream.flush();
-                        reader.close();
                     }
                 } catch (IOException e) {
                     System.out.println("IOException: " + e.getMessage());
