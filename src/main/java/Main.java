@@ -25,6 +25,7 @@ public class Main {
                         BufferedReader reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
                         String line;
                         while((line = reader.readLine()) != null) {
+                            System.out.println("+PONG\r\n");
                             outputStream.write("+PONG\r\n".getBytes());
                         }
                         outputStream.flush();
