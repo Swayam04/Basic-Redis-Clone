@@ -24,8 +24,8 @@ public class Main {
                      OutputStream outputStream = clientSocket.getOutputStream()) {
                     String line;
                     while ((line = reader.readLine()) != null) {
-                        if (line.isEmpty()) {
-                            break;
+                        if (line.isEmpty() || line.equals("\n")) {
+                            continue;
                         }
                         String response = "+PONG\r\n";
                         System.out.println(response);
