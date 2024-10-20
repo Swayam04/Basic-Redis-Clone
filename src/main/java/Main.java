@@ -28,6 +28,7 @@ public class Main {
                             System.out.println("Received: " + line);
                             outputStream.write("+PONG\r\n".getBytes());
                             outputStream.flush();
+                            break;
                         }
                     }
                 } catch (IOException e) {
