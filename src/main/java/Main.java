@@ -21,19 +21,17 @@ public class Main {
                 try (Socket clientSocket = serverSocket.accept()) {
                     OutputStream outputStream = clientSocket.getOutputStream();
                     BufferedReader reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-                    StringBuilder inputBuilder = new StringBuilder();
-                    int character;
+                    String line;
+                    StringBuilder commandBuilder = new StringBuilder();
 
-                    while ((character = reader.read()) != -1) {
-                        inputBuilder.append((char) character);
-
-                        if (character == '\n') {
-                            String command = inputBuilder.toString().trim();
-                            inputBuilder.setLength(0);
-                            System.out.println("Received command: " + command);
-
+                    // Read and accumulate until we detect a complete command
+                    while ((line = reader.readLine()) != null) {
+                        System.out.println("Received command: " + line);
+                        commandBuilder.append(line).append("\n");
+                        if (commandBuilder.toString().contains("PING")) {
                             outputStream.write("+PONG\r\n".getBytes());
                             outputStream.flush();
+                            commandBuilder.setLength(0);
                         }
                     }
                 } catch (IOException e) {
