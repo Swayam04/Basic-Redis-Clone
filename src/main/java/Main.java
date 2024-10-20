@@ -28,6 +28,7 @@ public class Main {
                             break;
                         }
                         String response = "+PONG\r\n";
+                        System.out.println(response);
                         outputStream.write(response.getBytes());
                         outputStream.flush();
                     }
