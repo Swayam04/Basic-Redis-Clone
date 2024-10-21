@@ -20,6 +20,5 @@ public class Main {
             log.error("Failed to start server: ", e);
             System.exit(1);
         }
-
     }
 }

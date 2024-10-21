@@ -101,16 +101,15 @@ public class EventLoop {
     public void acceptConnection(SelectionKey key) throws IOException {
         ServerSocketChannel serverChannel = (ServerSocketChannel) key.channel();
         SocketChannel client = serverChannel.accept();
-        String clientAddress = client.getRemoteAddress().toString();
 
-        logger.info("Accepted connection from {}", clientAddress);
+        logger.info("Accepted connection from {}", getClientInfo(key));
 
         try {
             client.configureBlocking(false);
             ByteBuffer readBuffer = ByteBuffer.allocate(config.bufferSize());
             client.register(selector, SelectionKey.OP_READ, readBuffer);
 
-            logger.debug("Client {} registered for reading", clientAddress);
+            logger.debug("Client {} registered for reading", getClientInfo(key));
         } catch (IOException e) {
             logger.error("Error while accepting client connection: ", e);
             client.close();
@@ -123,13 +122,13 @@ public class EventLoop {
 
         int bytesRead = client.read(readBuffer);
         if(bytesRead == -1) {
-            logger.info("Client {} disconnected", client.getRemoteAddress());
+            logger.info("Client {} disconnected", getClientInfo(key));
             closeConnection(key);
             return;
         }
         readBuffer.flip();
         key.interestOps(SelectionKey.OP_WRITE);
-        logger.debug("Registered for write after reading {}", bytesRead);
+        logger.debug("Registered for write after reading {} bytes.", bytesRead);
     }
 
     public void write(SelectionKey key) throws IOException {

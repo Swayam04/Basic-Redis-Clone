@@ -44,7 +44,7 @@ public class RedisServer {
 
             serverChannel.register(selector, SelectionKey.OP_ACCEPT);
             logger.info("Redis server starting on port {}", config.port);
-            logger.info("Configuration: bufferSize={}, commandTimeout={}ms", config.bufferSize, config.timeout);
+            logger.info("Configuration: bufferSize = {}, commandTimeout = {}ms", config.bufferSize, config.timeout);
 
             eventLoop.start();
         } catch(IOException e) {
