@@ -1,40 +1,25 @@
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.net.ServerSocket;
-import java.net.Socket;
+import core.RedisServer;
+import core.RedisServer.ServerConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Main {
+    private static final Logger log = LoggerFactory.getLogger(Main.class);
+
     public static void main(String[] args) {
-        // You can use print statements as follows for debugging, they'll be visible when running tests.
-        System.out.println("Logs from your program will appear here!");
+        try {
+            ServerConfig serverConfig = new ServerConfig(6379, 1024, 5000);
+            RedisServer server = new RedisServer(serverConfig);
 
-        //  Uncomment this block to pass the first stage
-        int port = 6379;
-        try (ServerSocket serverSocket = new ServerSocket(port)) {
-            // Since the tester restarts your program quite often, setting SO_REUSEADDR
-            // ensures that we don't run into 'Address already in use' errors
-            serverSocket.setReuseAddress(true);
-            // Wait for connection from client.
-            while (true) {
-                try (Socket clientSocket = serverSocket.accept()) {
-                    OutputStream outputStream = clientSocket.getOutputStream();
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-                    String line;
-
-                    while ((line = reader.readLine()) != null) {
-                        if (!line.trim().isEmpty() && line.contains("PING")) {
-                            outputStream.write("+PONG\r\n".getBytes());
-                            outputStream.flush();
-                        }
-                    }
-                } catch (IOException e) {
-                    System.out.println("IOException while handling client: " + e.getMessage());
-                }
-            }
-        } catch (IOException e) {
-            System.out.println("IOException: " + e.getMessage());
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                log.info("Shutting down...");
+                server.shutdown();
+            }));
+            server.start();
+        } catch (Exception e) {
+            log.error("Failed to start server: ", e);
+            System.exit(1);
         }
+
     }
 }
