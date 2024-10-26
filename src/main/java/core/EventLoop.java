@@ -112,8 +112,8 @@ public class EventLoop {
         try {
             client.configureBlocking(false);
             ClientState clientState = new ClientState(
-                    ByteBuffer.allocateDirect(config.bufferSize()),
-                    ByteBuffer.allocateDirect(config.bufferSize()),
+                    ByteBuffer.allocate(config.bufferSize()),
+                    ByteBuffer.allocate(config.bufferSize()),
                     new ArrayDeque<>()
             );
             client.register(selector, SelectionKey.OP_READ, clientState);
