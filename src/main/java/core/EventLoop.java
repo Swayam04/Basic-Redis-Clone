@@ -1,7 +1,11 @@
 package core;
 
+import commands.CommandExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import resp.RespParser;
+import utils.ClientState;
+import utils.ParsedCommand;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -9,7 +13,8 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.util.Iterator;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class EventLoop {
@@ -106,9 +111,12 @@ public class EventLoop {
 
         try {
             client.configureBlocking(false);
-            ByteBuffer readBuffer = ByteBuffer.allocate(config.bufferSize());
-            client.register(selector, SelectionKey.OP_READ, readBuffer);
-
+            ClientState clientState = new ClientState(
+                    ByteBuffer.allocateDirect(config.bufferSize()),
+                    ByteBuffer.allocateDirect(config.bufferSize()),
+                    new ArrayDeque<>()
+            );
+            client.register(selector, SelectionKey.OP_READ, clientState);
             logger.debug("Client {} registered for reading", getClientInfo(key));
         } catch (IOException e) {
             logger.error("Error while accepting client connection: ", e);
@@ -118,27 +126,79 @@ public class EventLoop {
 
     public void read(SelectionKey key) throws IOException {
         SocketChannel client = (SocketChannel) key.channel();
-        ByteBuffer readBuffer = (ByteBuffer) key.attachment();
+        ClientState state = (ClientState) key.attachment();
+        ByteBuffer readBuffer = state.readBuffer();
+        Deque<String> responseQueue = state.responseQueue();
 
-        int bytesRead = client.read(readBuffer);
-        if(bytesRead == -1) {
-            logger.info("Client {} disconnected", getClientInfo(key));
+        try {
+            int bytesRead = client.read(readBuffer);
+            if (bytesRead == -1) {
+                logger.info("Client {} disconnected", getClientInfo(key));
+                closeConnection(key);
+                return;
+            }
+            if (bytesRead > 0) {
+                List<Optional<ParsedCommand>> parsedCommands = RespParser.parseCommand(readBuffer);
+                for (Optional<ParsedCommand> command : parsedCommands) {
+                    String response = CommandExecutor.executeCommand(command.orElse(null));
+                    responseQueue.addLast(response);
+                }
+                readBuffer.compact();
+
+                if (!responseQueue.isEmpty()) {
+                    key.interestOps(SelectionKey.OP_WRITE);
+                    logger.debug("Registered for write after reading {} bytes.", bytesRead);
+                }
+            }
+        } catch (IOException e) {
+            logger.error("Error reading from client {}: ", getClientInfo(key), e);
             closeConnection(key);
-            return;
         }
-        readBuffer.flip();
-        key.interestOps(SelectionKey.OP_WRITE);
-        logger.debug("Registered for write after reading {} bytes.", bytesRead);
     }
 
     public void write(SelectionKey key) throws IOException {
         SocketChannel client = (SocketChannel) key.channel();
-        ByteBuffer writeBuffer = ByteBuffer.wrap("+PONG\r\n".getBytes());
-        client.write(writeBuffer);
-        key.interestOps(SelectionKey.OP_READ);
-        ByteBuffer readBuffer = (ByteBuffer) key.attachment();
-        readBuffer.clear();
-        logger.debug("Responded with PONG. Switched back to read mode");
+        ClientState state = (ClientState) key.attachment();
+        Deque<String> responseQueue = state.responseQueue();
+        ByteBuffer writeBuffer = state.writeBuffer();
+
+        try {
+            while (!responseQueue.isEmpty()) {
+                String response = responseQueue.peekFirst();
+                byte[] responseBytes = response.getBytes(StandardCharsets.UTF_8);
+                int remainingBytes = responseBytes.length;
+                int offset = 0;
+
+                while (remainingBytes > 0) {
+                    int spaceInBuffer = writeBuffer.remaining();
+                    int bytesToWrite = Math.min(spaceInBuffer, remainingBytes);
+                    writeBuffer.put(responseBytes, offset, bytesToWrite);
+                    int bytesWritten = client.write(writeBuffer);
+                    writeBuffer.clear();
+                    if (bytesWritten == 0) {
+                        if (offset > 0) {
+                            String remaining = new String(
+                                    responseBytes,
+                                    offset,
+                                    remainingBytes,
+                                    StandardCharsets.UTF_8
+                            );
+                            responseQueue.removeFirst();
+                            responseQueue.addFirst(remaining);
+                        }
+                        return;
+                    }
+                    offset += bytesToWrite;
+                    remainingBytes -= bytesToWrite;
+                }
+                responseQueue.removeFirst();
+            }
+            key.interestOps(SelectionKey.OP_READ);
+            logger.debug("Switched back to read mode");
+        } catch (IOException e) {
+            logger.error("Error writing to client {}: ", getClientInfo(key), e);
+            closeConnection(key);
+        }
     }
 
     private  void closeConnection(SelectionKey key) {
