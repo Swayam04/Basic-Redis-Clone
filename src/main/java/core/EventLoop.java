@@ -171,11 +171,13 @@ public class EventLoop {
                 int offset = 0;
 
                 while (remainingBytes > 0) {
-                    int spaceInBuffer = writeBuffer.remaining();
-                    int bytesToWrite = Math.min(spaceInBuffer, remainingBytes);
-                    writeBuffer.put(responseBytes, offset, bytesToWrite);
-                    int bytesWritten = client.write(writeBuffer);
                     writeBuffer.clear();
+                    int bytesToWrite = Math.min(writeBuffer.capacity(), remainingBytes);
+
+                    writeBuffer.put(responseBytes, offset, bytesToWrite);
+                    writeBuffer.flip();
+                    int bytesWritten = client.write(writeBuffer);
+
                     if (bytesWritten == 0) {
                         if (offset > 0) {
                             String remaining = new String(
@@ -192,6 +194,7 @@ public class EventLoop {
                     offset += bytesToWrite;
                     remainingBytes -= bytesToWrite;
                 }
+
                 responseQueue.removeFirst();
             }
             key.interestOps(SelectionKey.OP_READ);
