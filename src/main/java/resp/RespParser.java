@@ -6,6 +6,7 @@ import utils.ParsedCommand;
 
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -23,13 +24,17 @@ public class RespParser {
     private static final Logger logger = LoggerFactory.getLogger(RespParser.class);
 
     public static List<Optional<ParsedCommand>> parseCommand(ByteBuffer readBuffer) {
+        readBuffer.mark();
+        byte[] arr = new byte[readBuffer.remaining()];
+        readBuffer.get(arr);
+        logger.info("All data: {}", new String(arr, StandardCharsets.UTF_8));
+        readBuffer.reset();
         List<Optional<ParsedCommand>> parsedCommands = new ArrayList<>();
         while (readBuffer.hasRemaining()) {
             readBuffer.mark();
             try {
-                int position = readBuffer.position();
                 byte b = readBuffer.get();
-                logger.info("First byte: {} \nBuffer position: {}", b, position);
+                logger.info("First byte: {}", b);
                 if (b != ASTERISK_BYTE) {
                     parsedCommands.add(Optional.empty());
                     skipUntilCRLF(readBuffer);
