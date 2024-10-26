@@ -15,7 +15,10 @@ public class PingCommand extends RedisCommand {
     public String execute() {
         if(args.size() > 1) {
             return RespEncoder.encode(new IllegalArgumentException("wrong number of arguments for " + name + " command"));
+        } else if(args.size() == 1) {
+            return RespEncoder.encode(args.getFirst(), true);
+        } else {
+            return RespEncoder.encode("PONG", true);
         }
-        return RespEncoder.encode(Objects.requireNonNullElse(args.getFirst(), "PONG"), true);
     }
 }
