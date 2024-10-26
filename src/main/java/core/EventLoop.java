@@ -141,6 +141,7 @@ public class EventLoop {
                 List<Optional<ParsedCommand>> parsedCommands = RespParser.parseCommand(readBuffer);
                 for (Optional<ParsedCommand> command : parsedCommands) {
                     String response = CommandExecutor.executeCommand(command.orElse(null));
+                    logger.info("Response: {}", response);
                     responseQueue.addLast(response);
                 }
                 readBuffer.compact();

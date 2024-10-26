@@ -1,5 +1,7 @@
 package resp;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import utils.ParsedCommand;
 
 import java.nio.BufferUnderflowException;
@@ -7,6 +9,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+
 
 public class RespParser {
     public static final byte DOLLAR_BYTE = '$';
@@ -16,6 +19,8 @@ public class RespParser {
     public static final byte COLON_BYTE = ':';
     public static final byte COMMA_BYTE = ',';
     public static final byte HASH_BYTE = '#';
+
+    private static final Logger logger = LoggerFactory.getLogger(RespParser.class);
 
     public static List<Optional<ParsedCommand>> parseCommand(ByteBuffer readBuffer) {
         List<Optional<ParsedCommand>> parsedCommands = new ArrayList<>();
@@ -35,11 +40,14 @@ public class RespParser {
                         parsedCommands.add(Optional.empty());
                         continue;
                     }
+                    logger.info("Parsed command: {}", input);
                     parsedCommands.add(Optional.of(new ParsedCommand(input.getFirst(), input.subList(1, input.size()))));
                 } catch (IllegalArgumentException e) {
+                    logger.error(e.getMessage());
                     parsedCommands.add(Optional.empty());
                 }
             } catch (BufferUnderflowException | IllegalStateException e) {
+                logger.error(e.getMessage());
                 readBuffer.reset();
                 break;
             }
