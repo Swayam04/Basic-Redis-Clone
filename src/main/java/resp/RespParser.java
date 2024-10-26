@@ -27,8 +27,9 @@ public class RespParser {
         while (readBuffer.hasRemaining()) {
             readBuffer.mark();
             try {
+                int position = readBuffer.position();
                 byte b = readBuffer.get();
-                logger.info("First byte: {}", b);
+                logger.info("First byte: {} \nBuffer position: {}", b, position);
                 if (b != ASTERISK_BYTE) {
                     parsedCommands.add(Optional.empty());
                     skipUntilCRLF(readBuffer);

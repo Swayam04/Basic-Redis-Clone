@@ -145,7 +145,7 @@ public class EventLoop {
                     responseQueue.addLast(response);
                 }
                 readBuffer.compact();
-
+                readBuffer.flip();
                 if (!responseQueue.isEmpty()) {
                     key.interestOps(SelectionKey.OP_WRITE);
                     logger.debug("Registered for write after reading {} bytes.", bytesRead);
