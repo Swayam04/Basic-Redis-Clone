@@ -41,7 +41,7 @@ public class RespParser {
                         parsedCommands.add(Optional.empty());
                         continue;
                     }
-                    logger.info("Parsed command: {}", input);
+                    logger.debug("Parsed command: {}", input);
                     parsedCommands.add(Optional.of(new ParsedCommand(input.getFirst(), input.subList(1, input.size()))));
                 } catch (IllegalArgumentException e) {
                     logger.error(e.getMessage());
