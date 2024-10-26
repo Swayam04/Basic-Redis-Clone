@@ -112,8 +112,8 @@ public class EventLoop {
         try {
             client.configureBlocking(false);
             ClientState clientState = new ClientState(
-                    ByteBuffer.allocate(config.bufferSize()),
-                    ByteBuffer.allocate(config.bufferSize()),
+                    ByteBuffer.allocateDirect(config.bufferSize()),
+                    ByteBuffer.allocateDirect(config.bufferSize()),
                     new ArrayDeque<>()
             );
             client.register(selector, SelectionKey.OP_READ, clientState);
@@ -132,6 +132,7 @@ public class EventLoop {
 
         try {
             int bytesRead = client.read(readBuffer);
+            readBuffer.flip();
             if (bytesRead == -1) {
                 logger.info("Client {} disconnected", getClientInfo(key));
                 closeConnection(key);
@@ -145,7 +146,6 @@ public class EventLoop {
                     responseQueue.addLast(response);
                 }
                 readBuffer.compact();
-                readBuffer.flip();
                 if (!responseQueue.isEmpty()) {
                     key.interestOps(SelectionKey.OP_WRITE);
                     logger.debug("Registered for write after reading {} bytes.", bytesRead);
