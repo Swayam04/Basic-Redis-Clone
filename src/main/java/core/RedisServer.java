@@ -1,5 +1,6 @@
 package core;
 
+import db.InMemoryDatabase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,6 +64,7 @@ public class RedisServer {
             eventLoop.stop();
             selector.close();
             serverChannel.close();
+            InMemoryDatabase.getInstance().clear();
             logger.info("Redis server shut down.");
         } catch (IOException e) {
             logger.error("Failed to shutdown server", e);

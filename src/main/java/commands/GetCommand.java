@@ -14,7 +14,7 @@ public class GetCommand extends RedisCommand {
     @Override
     public String execute() {
         if(args.size() != 1) {
-            return RespEncoder.encodeError(new IllegalArgumentException("wrong number of arguments for " + name + " command"));
+            return RespEncoder.encode(new IllegalArgumentException("wrong number of arguments for " + name + " command"));
         }
         return RespEncoder.encode(InMemoryDatabase.getInstance().getStringData(args.getFirst()));
     }

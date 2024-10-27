@@ -24,7 +24,7 @@ public final class RespEncoder {
         };
     }
 
-    public static String encodeError(Exception e) {
+    private static String encodeError(Exception e) {
         return "-ERR " + e.getMessage() + CRLF;
     }
 
