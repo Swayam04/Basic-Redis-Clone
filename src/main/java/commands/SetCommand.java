@@ -31,7 +31,7 @@ public class SetCommand extends RedisCommand {
             if (!TTL_UNITS.containsKey(args.get(2).toUpperCase())) {
                 throw new IllegalArgumentException("invalid expire unit in '" + name + "' command");
             }
-            this.duration = parseDuration(args.get(1));
+            this.duration = parseDuration(args.get(3));
         }
     }
 
