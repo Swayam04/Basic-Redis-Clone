@@ -91,7 +91,7 @@ public class RespParser {
         throw new IllegalStateException("Incomplete line");
     }
 
-    public static String parseErrorMessage(ByteBuffer readBuffer) {
+    private static String parseErrorMessage(ByteBuffer readBuffer) {
         return readLine(readBuffer);
     }
 

@@ -14,6 +14,7 @@ public final class CommandExecutor {
             case "echo" -> new EchoCommand(parsedCommand.name(), parsedCommand.args()).execute();
             case "get" -> new GetCommand(parsedCommand.name(), parsedCommand.args()).execute();
             case "set" -> new SetCommand(parsedCommand.name(), parsedCommand.args()).execute();
+            case "incr" -> new IncrCommand(parsedCommand.name(), parsedCommand.args()).execute();
             default -> RespEncoder.encode(
                     new IllegalArgumentException("unknown command: '" + parsedCommand.name() + "'")
             );
