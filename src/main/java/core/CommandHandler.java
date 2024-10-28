@@ -40,7 +40,7 @@ public final class CommandHandler {
                     } else if(command.getName().equalsIgnoreCase("exec")) {
                         List<String> encodedCommands = new ArrayList<>();
                         while(!state.transactionQueue().isEmpty()) {
-                            encodedCommands.add(RespEncoder.encode(state.transactionQueue().poll().execute()));
+                            encodedCommands.add(state.transactionQueue().poll().execute());
                         }
                         responseQueue.offer(RespEncoder.encodeTransaction(encodedCommands));
                         endTransaction(state);
