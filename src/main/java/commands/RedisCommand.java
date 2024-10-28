@@ -17,4 +17,5 @@ public abstract class RedisCommand {
     }
 
     public abstract String execute();
+    public abstract void checkSyntax();
 }

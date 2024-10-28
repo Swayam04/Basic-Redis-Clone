@@ -1,6 +1,5 @@
 package core;
 
-import commands.CommandExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import resp.RespParser;
@@ -114,7 +113,8 @@ public class EventLoop {
             ClientState clientState = new ClientState(
                     ByteBuffer.allocateDirect(config.bufferSize()),
                     ByteBuffer.allocateDirect(config.bufferSize()),
-                    new ArrayDeque<>()
+                    new ArrayDeque<>(),
+                    new LinkedList<>()
             );
             client.register(selector, SelectionKey.OP_READ, clientState);
             logger.debug("Client {} registered for reading", getClientInfo(key));
@@ -141,8 +141,7 @@ public class EventLoop {
             if (bytesRead > 0) {
                 List<Optional<ParsedCommand>> parsedCommands = RespParser.parseCommand(readBuffer);
                 for (Optional<ParsedCommand> command : parsedCommands) {
-                    String response = CommandExecutor.executeCommand(command.orElse(null));
-                    responseQueue.addLast(response);
+                    CommandHandler.handleCommand(command.orElse(null), state);
                 }
                 readBuffer.compact();
                 if (!responseQueue.isEmpty()) {

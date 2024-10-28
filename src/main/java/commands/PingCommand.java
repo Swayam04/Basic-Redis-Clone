@@ -3,7 +3,6 @@ package commands;
 import resp.RespEncoder;
 
 import java.util.List;
-import java.util.Objects;
 
 public class PingCommand extends RedisCommand {
 
@@ -12,10 +11,15 @@ public class PingCommand extends RedisCommand {
     }
 
     @Override
-    public String execute() {
+    public void checkSyntax() {
         if(args.size() > 1) {
-            return RespEncoder.encode(new IllegalArgumentException("wrong number of arguments for " + name + " command"));
-        } else if(args.size() == 1) {
+            throw  new IllegalArgumentException("wrong number of arguments for " + name + " command");
+        }
+    }
+
+    @Override
+    public String execute() {
+        if(args.size() == 1) {
             return RespEncoder.encode(args.getFirst(), true);
         } else {
             return RespEncoder.encode("PONG", true);

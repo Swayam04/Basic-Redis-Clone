@@ -11,10 +11,14 @@ public class EchoCommand extends RedisCommand {
     }
 
     @Override
-    public String execute() {
+    public void checkSyntax() {
         if(args.size() != 1) {
-            return RespEncoder.encode(new IllegalArgumentException("wrong number of arguments for " + name + " command"));
+            throw new IllegalArgumentException("wrong number of arguments for " + name + " command");
         }
+    }
+
+    @Override
+    public String execute() {
         return RespEncoder.encode(args.getFirst());
     }
 

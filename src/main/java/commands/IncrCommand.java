@@ -12,10 +12,14 @@ public class IncrCommand extends RedisCommand {
     }
 
     @Override
-    public String execute() {
+    public void checkSyntax() {
         if(args.size() != 1) {
-            return RespEncoder.encode(new IllegalArgumentException("wrong number of arguments for command"));
+            throw new IllegalArgumentException("wrong number of arguments for command");
         }
+    }
+
+    @Override
+    public String execute() {
         try {
             String key = args.getFirst();
             String value = InMemoryDatabase.getInstance().getStringData(key);

@@ -54,9 +54,6 @@ public final class RespEncoder {
         if (items == null) {
             return "$-1" + CRLF;
         }
-        if (items.isEmpty()) {
-            return "*0" + CRLF;
-        }
         StringBuilder encodedList = new StringBuilder()
                 .append("*")
                 .append(items.size())
@@ -69,5 +66,14 @@ public final class RespEncoder {
             encodedList.append(encode(item));
         }
         return encodedList.toString();
+    }
+
+    public static String encodeTransaction(List<String> transaction) {
+        StringBuilder encodedTransaction = new StringBuilder();
+        encodedTransaction.append("*").append(transaction.size()).append(CRLF);
+        for (String item : transaction) {
+            encodedTransaction.append(item);
+        }
+        return encodedTransaction.toString();
     }
 }
