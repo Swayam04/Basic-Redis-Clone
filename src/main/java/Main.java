@@ -11,11 +11,11 @@ public class Main {
 
     public static void main(String[] args) {
         Map<String, String> properties = new HashMap<>();
-        for (String arg : args) {
-            if(arg.equals("--dir")) {
-                properties.put("dir", arg);
-            } else if(arg.equals("--dbfilename")) {
-                properties.put("dbfilename", arg);
+        for (int i = 0; i < args.length; i++) {
+            if(args[i].equals("--dir")) {
+                properties.put("dir", args[i + 1]);
+            } else if(args[i].equals("--dbfilename")) {
+                properties.put("dbfilename", args[i + 1]);
             }
         }
         try {
