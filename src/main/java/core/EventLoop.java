@@ -20,7 +20,6 @@ public class EventLoop {
 
     public static class Builder {
         private Selector selector;
-        private RedisServer.ServerConfig config;
         private AtomicBoolean isRunning;
 
         public Builder selector(Selector selector) {
@@ -33,24 +32,17 @@ public class EventLoop {
             return this;
         }
 
-        public Builder config(RedisServer.ServerConfig config) {
-            this.config = config;
-            return this;
-        }
-
         public EventLoop build() {
             return new EventLoop(this);
         }
     }
 
     private final Selector selector;
-    private final RedisServer.ServerConfig config;
     private final AtomicBoolean isRunning;
     private static final Logger logger = LoggerFactory.getLogger(EventLoop.class);
 
     private EventLoop(Builder builder) {
         selector = builder.selector;
-        config = builder.config;
         isRunning = builder.isRunning;
     }
 
@@ -58,7 +50,7 @@ public class EventLoop {
         logger.info("Starting event loop");
         while(isRunning.get()) {
             try {
-                int readyOps = selector.select(config.timeout());
+                int readyOps = selector.select(RedisServer.currentConfig().timeout());
                 if(readyOps > 0) {
                     processSelectedKeys();
                 }
@@ -111,8 +103,8 @@ public class EventLoop {
         try {
             client.configureBlocking(false);
             ClientState clientState = new ClientState(
-                    ByteBuffer.allocateDirect(config.bufferSize()),
-                    ByteBuffer.allocateDirect(config.bufferSize()),
+                    ByteBuffer.allocateDirect(RedisServer.currentConfig().bufferSize()),
+                    ByteBuffer.allocateDirect(RedisServer.currentConfig().bufferSize()),
                     new ArrayDeque<>(),
                     new LinkedList<>()
             );
