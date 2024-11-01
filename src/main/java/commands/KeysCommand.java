@@ -23,7 +23,7 @@ public class KeysCommand extends RedisCommand {
         return RespEncoder.encode(
                 InMemoryDatabase
                         .getInstance()
-                        .getKeysMatchingPattern(convertGlobToRegex(args.get(1)))
+                        .getKeysMatchingPattern(convertGlobToRegex(args.getFirst()))
         );
     }
 
