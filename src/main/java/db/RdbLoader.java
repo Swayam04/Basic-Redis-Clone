@@ -21,8 +21,10 @@ public class RdbLoader {
     private static long numberOfKeysWithExpiry;
 
     public static void load() {
+        logger.info("Attempting to load data from .rdb file");
         if(RedisServer.currentConfig().properties().containsKey("dir") &&
                 RedisServer.currentConfig().properties().containsKey("dbfilename")) {
+            logger.info("Loading data from .rdb file");
             loadFromDump(RedisServer.currentConfig().properties().get("dir"),
                     RedisServer.currentConfig().properties().get("dbfilename"));
         }
