@@ -62,7 +62,7 @@ public class RdbLoader {
             readKeyCounts(readBuffer);
             logger.info("Found {} total keys, {} keys with expiry", numberOfKeys, numberOfKeysWithExpiry);
 
-            while((readBuffer.get(readBuffer.position()) & 0xFF) == 0xFF) {
+            while((readBuffer.get(readBuffer.position()) & 0xFF) != 0xFF) {
                 logger.debug("Buffer position before reading key: {}", readBuffer.position());
 
                 int marker = (readBuffer.get() & 0xFF);
