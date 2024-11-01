@@ -41,14 +41,10 @@ public class RdbLoader {
             ByteBuffer buffer = ByteBuffer.allocate((int) fileChannel.size());
             fileChannel.read(buffer);
             buffer.flip();
-
-            // Validate header
             if (!new String(buffer.array(), 0, 5, StandardCharsets.UTF_8).startsWith("REDIS")) {
                 logger.warn("Invalid RDB header");
                 return;
             }
-
-            // Skip header, auxiliary fields and DB details
             while (buffer.hasRemaining() && (buffer.get() & 0xFF) != 0xFB);
             skipInteger(buffer);
             skipInteger(buffer);
