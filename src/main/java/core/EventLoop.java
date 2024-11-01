@@ -156,7 +156,6 @@ public class EventLoop {
         try {
             while (!responseQueue.isEmpty()) {
                 String response = responseQueue.peekFirst();
-                logger.info("response {}", response);
                 byte[] responseBytes = response.getBytes(StandardCharsets.UTF_8);
                 int remainingBytes = responseBytes.length;
                 int offset = 0;

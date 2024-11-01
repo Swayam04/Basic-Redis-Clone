@@ -34,16 +34,13 @@ public class KeysCommand extends RedisCommand {
         }
         StringBuilder regex = new StringBuilder("^");
         boolean escaping = false;
-
         for (int i = 0; i < glob.length(); i++) {
             char c = glob.charAt(i);
-
             if (escaping) {
                 regex.append(Pattern.quote(String.valueOf(c)));
                 escaping = false;
                 continue;
             }
-
             switch (c) {
                 case '\\' -> escaping = true;
                 case '*' -> regex.append(".*");
@@ -66,5 +63,4 @@ public class KeysCommand extends RedisCommand {
         regex.append("$");
         return regex.toString();
     }
-
 }
