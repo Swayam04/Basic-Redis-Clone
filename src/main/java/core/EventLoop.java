@@ -138,7 +138,6 @@ public class EventLoop {
                 readBuffer.compact();
                 if (!responseQueue.isEmpty()) {
                     key.interestOps(SelectionKey.OP_WRITE);
-                    logger.debug("Registered for write after reading {} bytes.", bytesRead);
                 }
             }
         } catch (IOException e) {
@@ -188,7 +187,6 @@ public class EventLoop {
                 responseQueue.removeFirst();
             }
             key.interestOps(SelectionKey.OP_READ);
-            logger.debug("Switched back to read mode");
         } catch (IOException e) {
             logger.error("Error writing to client {}: ", getClientInfo(key), e);
             closeConnection(key);
