@@ -1,11 +1,9 @@
 package db;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 public class InMemoryDatabase {
     private final Map<String, Entry> mainTable;
@@ -44,14 +42,20 @@ public class InMemoryDatabase {
     }
 
     public List<String> getKeysMatchingPattern(String regexPattern) {
-        List<String> matchingKeys = new ArrayList<>();
-        Pattern pattern = Pattern.compile(regexPattern);
-        for(Map.Entry<String, Entry> entry : mainTable.entrySet()) {
-            if (pattern.matcher(entry.getKey()).matches()) {
-                matchingKeys.add(entry.getKey());
+        try {
+            List<String> matchingKeys = new ArrayList<>();
+            Pattern pattern = Pattern.compile(regexPattern);
+
+            for(Map.Entry<String, Entry> entry : mainTable.entrySet()) {
+                String key = entry.getKey();
+                if (pattern.matcher(key).matches()) {
+                    matchingKeys.add(key);
+                }
             }
+            return matchingKeys;
+        } catch (PatternSyntaxException e) {
+            return Collections.emptyList();
         }
-        return matchingKeys;
     }
 
     private record Entry(RedisDataType dataType, Object value, LocalDateTime expirationDateTime) {
