@@ -15,6 +15,7 @@ public final class CommandFactory {
             case "exec" -> new ExecCommand(parsedCommand.name().toLowerCase(), parsedCommand.args(), inTransaction);
             case "discard" -> new DiscardCommand(parsedCommand.name().toLowerCase(), parsedCommand.args(), inTransaction);
             case "config" -> new ConfigCommand(parsedCommand.name().toLowerCase(), parsedCommand.args());
+            case "keys" -> new KeysCommand(parsedCommand.name().toLowerCase(), parsedCommand.args());
             default -> throw new UnsupportedOperationException("Unknown command: " + parsedCommand.name());
         };
     }

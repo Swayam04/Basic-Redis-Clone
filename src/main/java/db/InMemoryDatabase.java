@@ -1,27 +1,29 @@
 package db;
 
 import java.time.LocalDateTime;
-import java.time.temporal.TemporalUnit;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 public class InMemoryDatabase {
-    private static InMemoryDatabase instance;
     private final Map<String, Entry> mainTable;
 
     private InMemoryDatabase() {
         mainTable = new HashMap<>();
     }
 
-    public static InMemoryDatabase getInstance() {
-        if (instance == null) {
-            instance = new InMemoryDatabase();
-        }
-        return instance;
+    private static final class InstanceHolder {
+        private static final InMemoryDatabase INSTANCE = new InMemoryDatabase();
     }
 
-    public void addTemporaryStringData(String key, String value, long expirationDuration, TemporalUnit unit) {
-        mainTable.put(key, new Entry(RedisDataType.STRING, value, LocalDateTime.now().plus(expirationDuration, unit)));
+    public static InMemoryDatabase getInstance() {
+        return InstanceHolder.INSTANCE;
+    }
+
+    public void addTemporaryStringData(String key, String value, LocalDateTime dateTime) {
+        mainTable.put(key, new Entry(RedisDataType.STRING, value, dateTime));
     }
 
     public void addStringData(String key, String value) {
@@ -39,6 +41,17 @@ public class InMemoryDatabase {
         }
         mainTable.remove(key);
         return null;
+    }
+
+    public List<String> getKeysMatchingPattern(String regexPattern) {
+        List<String> matchingKeys = new ArrayList<>();
+        Pattern pattern = Pattern.compile(regexPattern);
+        for(Map.Entry<String, Entry> entry : mainTable.entrySet()) {
+            if (pattern.matcher(entry.getKey()).matches()) {
+                matchingKeys.add(entry.getKey());
+            }
+        }
+        return matchingKeys;
     }
 
     private record Entry(RedisDataType dataType, Object value, LocalDateTime expirationDateTime) {

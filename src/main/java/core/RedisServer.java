@@ -1,6 +1,7 @@
 package core;
 
 import db.InMemoryDatabase;
+import db.RdbLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,6 +51,7 @@ public class RedisServer {
             logger.info("Redis server starting on port {}", globalConfig.port);
             logger.info("Configuration: bufferSize = {}, commandTimeout = {}ms", globalConfig.bufferSize, globalConfig.timeout);
 
+            RdbLoader.load();
             eventLoop.start();
         } catch(IOException e) {
             logger.error("Failed to start server", e);

@@ -3,6 +3,7 @@ package commands;
 import db.InMemoryDatabase;
 import resp.RespEncoder;
 
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalUnit;
 import java.util.List;
@@ -45,7 +46,7 @@ public class SetCommand extends RedisCommand {
         }
         String ttlUnit = args.get(2).toUpperCase();
         InMemoryDatabase.getInstance().addTemporaryStringData(
-                key, value, duration, TTL_UNITS.get(ttlUnit)
+                key, value, LocalDateTime.now().plus(duration, TTL_UNITS.get(ttlUnit))
         );
         return RespEncoder.encode("OK", true);
     }
