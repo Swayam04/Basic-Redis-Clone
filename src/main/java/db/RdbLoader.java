@@ -22,52 +22,83 @@ public class RdbLoader {
     private static long numberOfKeysWithExpiry;
 
     public static void load() {
+        logger.info("Starting RDB load");
         if(RedisServer.currentConfig().properties().containsKey("dir") &&
                 RedisServer.currentConfig().properties().containsKey("dbfilename")) {
-            loadFromDump(RedisServer.currentConfig().properties().get("dir"),
-                    RedisServer.currentConfig().properties().get("dbfilename"));
+            String dir = RedisServer.currentConfig().properties().get("dir");
+            String filename = RedisServer.currentConfig().properties().get("dbfilename");
+            logger.info("Loading RDB from directory: {}, filename: {}", dir, filename);
+            loadFromDump(dir, filename);
+        } else {
+            logger.info("No RDB configuration found");
         }
     }
 
     private static void loadFromDump(String directoryName, String fileName) {
         Path filePath = Path.of(directoryName).resolve(fileName);
+        logger.info("Attempting to load RDB file: {}", filePath.toAbsolutePath());
+
         if(!Files.exists(filePath)) {
+            logger.info("RDB file does not exist: {}", filePath);
             return;
         }
+
         try(FileChannel fileChannel = FileChannel.open(filePath, StandardOpenOption.READ)) {
+            logger.info("Opened RDB file, size: {} bytes", fileChannel.size());
             ByteBuffer readBuffer = ByteBuffer.allocate((int) fileChannel.size());
-            fileChannel.read(readBuffer);
+            int bytesRead = fileChannel.read(readBuffer);
+            logger.debug("Read {} bytes from file", bytesRead);
             readBuffer.flip();
 
             String header = readHeader(readBuffer);
+            logger.info("Read RDB header: {}", header);
             if(!header.startsWith("REDIS")) {
-                logger.info("File {} not in valid RDB format", fileName);
+                logger.warn("Invalid RDB header: {}", header);
                 return;
             }
+
+            logger.debug("Skipping auxiliary fields and DB details");
             skipAuxiliaryFieldsAndDBDetails(readBuffer);
             readKeyCounts(readBuffer);
+            logger.info("Found {} total keys, {} keys with expiry", numberOfKeys, numberOfKeysWithExpiry);
 
             for(int i = 0; i < numberOfKeys; i++) {
+                logger.debug("Processing key {} of {}", i + 1, numberOfKeys);
+                logger.debug("Buffer position before reading key: {}", readBuffer.position());
+
                 int marker = (readBuffer.get() & 0xFF);
+                logger.debug("Read marker byte: 0x{}", String.format("%02X", marker));
+
                 long expiry = 0;
                 if(marker == 0xFC || marker == 0xFD) {
                     expiry = readExpiry(readBuffer, marker == 0xFC);
-                    logger.info("rdb key expiry: {}", expiry);
-
+                    logger.info("Key has expiry timestamp: {}", expiry);
                 }
+
                 int valueType;
                 if(expiry > 0) {
                     valueType = readBuffer.get() & 0xFF;
+                    logger.debug("Read value type after expiry: 0x{}", String.format("%02X", valueType));
                 } else {
                     valueType = marker;
+                    logger.debug("Using marker as value type: 0x{}", String.format("%02X", valueType));
                 }
+
                 if(valueType != 0) {
-                    logger.info("Value type {} not supported", valueType);
+                    logger.warn("Unsupported value type: 0x{}", String.format("%02X", valueType));
                     break;
                 }
+
+                logger.debug("Reading key at position: {}", readBuffer.position());
                 String key = readStringValue(readBuffer);
+                logger.debug("Reading value at position: {}", readBuffer.position());
                 String value = readStringValue(readBuffer);
-                logger.info("Key: {}, Value: {}", key, value);
+                logger.info("Read key-value pair: '{}' = '{}' (key length: {}, value length: {})",
+                        key,
+                        value.length() > 50 ? value.substring(0, 47) + "..." : value,
+                        key.length(),
+                        value.length());
+
                 if(expiry > 0) {
                     LocalDateTime expiryDateTime;
                     if(expiry <= 2L * Integer.MAX_VALUE) {
@@ -75,12 +106,16 @@ public class RdbLoader {
                     } else {
                         expiryDateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(expiry), ZoneId.systemDefault());
                     }
+                    logger.debug("Setting key with expiry: {}", expiryDateTime);
                     InMemoryDatabase.getInstance().addTemporaryStringData(key, value, expiryDateTime);
                 } else {
+                    logger.debug("Setting key without expiry");
                     InMemoryDatabase.getInstance().addStringData(key, value);
                 }
             }
             readBuffer.clear();
+            logger.info("Completed loading RDB file");
+
         } catch (Exception e) {
             logger.warn("Failed to load file {}", fileName, e);
         }
@@ -88,144 +123,128 @@ public class RdbLoader {
 
     private static long readExpiry(ByteBuffer buffer, boolean isMillis) {
         buffer.order(ByteOrder.LITTLE_ENDIAN);
-        long expiry = isMillis ? buffer.getLong() : buffer.getInt();
+        long expiry;
+        if (isMillis) {
+            expiry = buffer.getLong();
+            logger.debug("Read millisecond expiry: {}", expiry);
+        } else {
+            expiry = buffer.getInt();
+            logger.debug("Read second expiry: {}", expiry);
+        }
         buffer.order(ByteOrder.BIG_ENDIAN);
         return expiry;
     }
 
     private static String readStringValue(ByteBuffer buffer) {
-        logger.debug("Starting to read string value at buffer position: {}", buffer.position());
+        int initialPosition = buffer.position();
+        logger.debug("Starting to read string at position: {}", initialPosition);
 
-        // Peek at the first byte without consuming
-        int firstByte = buffer.get(buffer.position()) & 0xFF;
-        int lengthEncoding = (firstByte & 0xC0) >> 6;
+        int lengthEncoding = (buffer.get(buffer.position()) & 0xC0) >> 6;
+        logger.debug("Length encoding bits: {}", String.format("%2b", lengthEncoding));
 
-        logger.debug("First byte: 0x{}, length encoding: {}", String.format("%02X", firstByte), lengthEncoding);
-
-        // Special encoding for integers (11 prefix)
-        if (lengthEncoding == 0b11) {
-            logger.debug("Detected special integer encoding");
+        int length;
+        if(lengthEncoding == 0b00) {
+            length = (buffer.get() << 2) >> 2;
+            logger.debug("6-bit length encoding: {}", length);
+        } else if(lengthEncoding == 0b01) {
+            length = (buffer.getShort() << 2) >> 2;
+            logger.debug("14-bit length encoding: {}", length);
+        } else if(lengthEncoding == 0b10) {
+            buffer.get();
+            length = buffer.getInt();
+            logger.debug("32-bit length encoding: {}", length);
+        } else {
+            logger.debug("Special encoding detected, reading integer");
             return String.valueOf(readInteger(buffer));
         }
 
-        // Regular string length encoding
-        int length;
-        if (lengthEncoding == 0b00) {
-            // Use first byte, mask out length encoding bits
-            buffer.get(); // consume the byte we peeked at
-            length = firstByte & 0x3F;
-            logger.debug("6-bit length encoding: {}", length);
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        logger.debug("Reading {} bytes for string content", length);
+        while(length > 0) {
+            byte b = buffer.get();
+            byteArrayOutputStream.write(b);
+            length--;
         }
-        else if (lengthEncoding == 0b01) {
-            // Read 14-bit length
-            buffer.get(); // consume first byte
-            int secondByte = buffer.get() & 0xFF;
-            length = ((firstByte & 0x3F) << 8) | secondByte;
-            logger.debug("14-bit length encoding: {}", length);
-        }
-        else {
-            // Read 32-bit length
-            buffer.get(); // consume first byte
-            length = buffer.getInt();
-            logger.debug("32-bit length encoding: {}", length);
-        }
-
-        // Validate length
-        if (length < 0) {
-            throw new IllegalStateException("Invalid negative length: " + length);
-        }
-        if (length > buffer.remaining()) {
-            throw new IllegalStateException(
-                    String.format("Length %d exceeds remaining buffer size %d", length, buffer.remaining())
-            );
-        }
-
-        // Read string content
-        byte[] bytes = new byte[length];
-        buffer.get(bytes);
-        String result = new String(bytes, StandardCharsets.UTF_8);
-
-        logger.debug("Read string of length {}: {}", length,
+        String result = byteArrayOutputStream.toString(StandardCharsets.UTF_8);
+        logger.debug("Read string from {} to {}: '{}'",
+                initialPosition,
+                buffer.position(),
                 result.length() > 50 ? result.substring(0, 47) + "..." : result);
-
         return result;
     }
 
     private static String readHeader(ByteBuffer buffer) {
+        logger.debug("Starting to read header at position: {}", buffer.position());
         int nextSectionMarker = 0xFA;
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         while(buffer.hasRemaining()) {
             byte b = buffer.get();
             if((b & 0xFF) == nextSectionMarker) {
+                logger.debug("Found header end marker at position: {}", buffer.position() - 1);
                 break;
             }
             byteArrayOutputStream.write(b);
         }
-        return byteArrayOutputStream.toString(StandardCharsets.UTF_8);
+        String header = byteArrayOutputStream.toString(StandardCharsets.UTF_8);
+        logger.debug("Read header: '{}'", header);
+        return header;
     }
 
     private static void skipAuxiliaryFieldsAndDBDetails(ByteBuffer buffer) {
+        logger.debug("Starting to skip auxiliary fields at position: {}", buffer.position());
         int nextSectionMarker = 0xFB;
+        int bytesSkipped = 0;
         while(buffer.hasRemaining()) {
             byte b = buffer.get();
+            bytesSkipped++;
             if((b & 0xFF) == nextSectionMarker) {
+                logger.debug("Found auxiliary section end marker after {} bytes at position: {}",
+                        bytesSkipped, buffer.position() - 1);
                 break;
             }
         }
     }
 
     private static void readKeyCounts(ByteBuffer buffer) {
+        logger.debug("Reading key counts at position: {}", buffer.position());
         numberOfKeys = readInteger(buffer);
         numberOfKeysWithExpiry = readInteger(buffer);
+        logger.debug("Read counts - total keys: {}, keys with expiry: {}",
+                numberOfKeys, numberOfKeysWithExpiry);
     }
 
     private static long readInteger(ByteBuffer buffer) {
         byte identifier = buffer.get();
-        int encoding = identifier & 0x3F;
-
-        logger.debug("Reading integer with encoding: 0x{}", String.format("%02X", encoding));
+        int initialPosition = buffer.position();
+        logger.debug("Reading integer at position: {}, identifier: 0x{}",
+                initialPosition, String.format("%02X", identifier));
 
         buffer.order(ByteOrder.LITTLE_ENDIAN);
-        try {
-            // For encoded integers in string representation
-            // Encoding values 0-3 are special cases defined in Redis RDB format
-            long result = switch (encoding) {
-                case 0 -> {
-                    byte val = buffer.get();
-                    logger.debug("Read 8-bit integer: {}", val);
-                    yield val;
-                }
-                case 1 -> {
-                    short val = buffer.getShort();
-                    logger.debug("Read 16-bit integer: {}", val);
-                    yield val;
-                }
-                case 2 -> {
-                    int val = buffer.getInt();
-                    logger.debug("Read 32-bit integer: {}", val);
-                    yield val;
-                }
-                // Handle encoding 3 for string representation of integers
-                case 3 -> {
-                    long val = buffer.getLong();
-                    logger.debug("Read 64-bit integer: {}", val);
-                    yield val;
-                }
-                default -> {
-                    // For other encodings, treat as regular integer
-                    logger.debug("Using default integer encoding for: 0x{}", String.format("%02X", encoding));
-                    yield encoding;
-                }
-            };
-            buffer.order(ByteOrder.BIG_ENDIAN);
-            return result;
-        } catch (Exception e) {
-            logger.warn("Error reading integer with encoding 0x{}: {}",
-                    String.format("%02X", encoding), e.getMessage());
-            buffer.order(ByteOrder.BIG_ENDIAN);
-            // Return the encoding itself as the value for non-standard cases
-            return encoding;
-        }
-    }
+        long result = switch ((identifier & 0xFF)) {
+            case 0xC0 -> {
+                byte val = buffer.get();
+                logger.debug("Read 8-bit integer: {}", val);
+                yield val;
+            }
+            case 0xC1 -> {
+                short val = buffer.getShort();
+                logger.debug("Read 16-bit integer: {}", val);
+                yield val;
+            }
+            case 0xC2 -> {
+                int val = buffer.getInt();
+                logger.debug("Read 32-bit integer: {}", val);
+                yield val;
+            }
+            default -> {
+                logger.debug("Unknown integer identifier: 0x{}", String.format("%02X", identifier));
+                yield 0;
+            }
+        };
+        buffer.order(ByteOrder.BIG_ENDIAN);
 
+        logger.debug("Completed reading integer from {} to {}, value: {}",
+                initialPosition - 1, buffer.position(), result);
+        return result;
+    }
 }
