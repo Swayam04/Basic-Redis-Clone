@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -21,10 +22,8 @@ public class RdbLoader {
     private static long numberOfKeysWithExpiry;
 
     public static void load() {
-        logger.info("Attempting to load data from .rdb file");
         if(RedisServer.currentConfig().properties().containsKey("dir") &&
                 RedisServer.currentConfig().properties().containsKey("dbfilename")) {
-            logger.info("Loading data from .rdb file");
             loadFromDump(RedisServer.currentConfig().properties().get("dir"),
                     RedisServer.currentConfig().properties().get("dbfilename"));
         }
@@ -53,6 +52,8 @@ public class RdbLoader {
                 long expiry = 0;
                 if(marker == 0xFC || marker == 0xFD) {
                     expiry = readExpiry(readBuffer, marker == 0xFC);
+                    logger.info("rdb key expiry: {}", expiry);
+
                 }
                 int valueType;
                 if(expiry > 0) {
@@ -66,6 +67,7 @@ public class RdbLoader {
                 }
                 String key = readStringValue(readBuffer);
                 String value = readStringValue(readBuffer);
+                logger.info("Key: {}, Value: {}", key, value);
                 if(expiry > 0) {
                     LocalDateTime expiryDateTime;
                     if(expiry <= 2L * Integer.MAX_VALUE) {
@@ -85,16 +87,19 @@ public class RdbLoader {
     }
 
     private static long readExpiry(ByteBuffer buffer, boolean isMillis) {
-        return isMillis ? buffer.getLong() : buffer.getInt();
+        buffer.order(ByteOrder.LITTLE_ENDIAN);
+        long expiry = isMillis ? buffer.getLong() : buffer.getInt();
+        buffer.order(ByteOrder.BIG_ENDIAN);
+        return expiry;
     }
 
     private static String readStringValue(ByteBuffer buffer) {
         int lengthEncoding = (buffer.get(buffer.position()) & 0xC0) >> 6;
         int length;
         if(lengthEncoding == 0b00) {
-             length = buffer.get() << 2;
+             length = (buffer.get() << 2) >> 2;
         } else if(lengthEncoding == 0b01) {
-            length = buffer.getShort() << 2;
+            length = (buffer.getShort() << 2) >> 2;
         } else if(lengthEncoding == 0b10) {
             buffer.get();
             length = buffer.getInt();
@@ -140,12 +145,15 @@ public class RdbLoader {
 
     private static long readInteger(ByteBuffer buffer) {
         byte identifier = buffer.get();
-        return switch ((identifier & 0xFF)) {
+        buffer.order(ByteOrder.LITTLE_ENDIAN);
+        long result = switch ((identifier & 0xFF)) {
             case 0xC0 -> buffer.get();
             case 0xC1 -> buffer.getShort();
             case 0xC2 -> buffer.getInt();
             default -> 0;
         };
+        buffer.order(ByteOrder.BIG_ENDIAN);
+        return result;
     }
 
 }
