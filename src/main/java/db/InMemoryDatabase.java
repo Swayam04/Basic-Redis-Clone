@@ -13,7 +13,7 @@ public class InMemoryDatabase {
     }
 
     private static final class InstanceHolder {
-        private static final InMemoryDatabase INSTANCE = new InMemoryDatabase();
+        static final InMemoryDatabase INSTANCE = new InMemoryDatabase();
     }
 
     public static InMemoryDatabase getInstance() {

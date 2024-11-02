@@ -4,6 +4,7 @@ import db.InMemoryDatabase;
 import db.RdbLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import replication.ReplicationInfo;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -23,6 +24,10 @@ public class RedisServer {
     public record ServerConfig(int port, int bufferSize, long timeout, Map<String, String> properties) {
     }
 
+    private static final class ReplicationInfoHolder {
+        static final ReplicationInfo replicationInfo = new ReplicationInfo();
+    }
+
     public RedisServer(ServerConfig config) throws IOException {
         globalConfig = config;
         this.isRunning = new AtomicBoolean(false);
@@ -35,6 +40,10 @@ public class RedisServer {
 
     public static ServerConfig currentConfig() {
         return globalConfig;
+    }
+
+    public static ReplicationInfo getReplicationInfo() {
+        return ReplicationInfoHolder.replicationInfo;
     }
 
     public void start() {

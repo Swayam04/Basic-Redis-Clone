@@ -44,6 +44,11 @@ public class Main {
                         properties.put("dbfilename", args[++i]);
                     }
                     break;
+                case "--replicaof":
+                    if(i + 1 < args.length) {
+                        properties.put("replicaof", args[++i]);
+                    }
+                    break;
             }
         }
 
