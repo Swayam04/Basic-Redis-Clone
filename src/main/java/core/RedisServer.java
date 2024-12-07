@@ -19,6 +19,7 @@ public class RedisServer {
     private final ServerSocketChannel serverChannel;
     private final Selector selector;
     private final EventLoop eventLoop;
+    private final ReplicaHandler replicaHandler;
     private final AtomicBoolean isRunning;
 
     public record ServerConfig(int port, int bufferSize, long timeout, Map<String, String> properties) {
@@ -33,9 +34,15 @@ public class RedisServer {
         this.isRunning = new AtomicBoolean(false);
         this.selector = Selector.open();
         this.serverChannel = ServerSocketChannel.open();
-        this.eventLoop = new EventLoop.Builder().
-                            selector(this.selector).
-                            isRunning(isRunning).build();
+        if(globalConfig.properties().containsKey("replicaof")) {
+            this.replicaHandler = new ReplicaHandler();
+            this.eventLoop = null;
+        } else {
+            this.replicaHandler = null;
+            this.eventLoop = new EventLoop.Builder().
+                    selector(this.selector).
+                    isRunning(isRunning).build();
+        }
     }
 
     public static ServerConfig currentConfig() {
@@ -52,21 +59,30 @@ public class RedisServer {
             return;
         }
         try {
-            serverChannel.configureBlocking(false);
-            serverChannel.socket().setReuseAddress(true);
-            serverChannel.socket().bind(new InetSocketAddress(globalConfig.port));
-
-            serverChannel.register(selector, SelectionKey.OP_ACCEPT);
-            logger.info("Redis server starting on port {}", globalConfig.port);
-            logger.info("Configuration: bufferSize = {}, commandTimeout = {}ms", globalConfig.bufferSize, globalConfig.timeout);
-
-            RdbLoader.load();
-            eventLoop.start();
+            if(replicaHandler == null) {
+                startMasterMode();
+            } else {
+                logger.info("Redis server starting in replica mode");
+                replicaHandler.start();
+            }
         } catch(IOException e) {
             logger.error("Failed to start server", e);
             shutdown();
             throw new RuntimeException("Redis server startup failed" ,e);
         }
+    }
+
+    private void startMasterMode() throws IOException {
+        serverChannel.configureBlocking(false);
+        serverChannel.socket().setReuseAddress(true);
+        serverChannel.socket().bind(new InetSocketAddress(globalConfig.port));
+
+        serverChannel.register(selector, SelectionKey.OP_ACCEPT);
+        logger.info("Redis server starting on port {}", globalConfig.port);
+        logger.info("Configuration: bufferSize = {}, commandTimeout = {}ms", globalConfig.bufferSize, globalConfig.timeout);
+
+        RdbLoader.load();
+        eventLoop.start();
     }
 
     public void shutdown() {
@@ -75,9 +91,14 @@ public class RedisServer {
             return;
         }
         try {
-            eventLoop.stop();
-            selector.close();
-            serverChannel.close();
+            if(replicaHandler != null) {
+                replicaHandler.stop();
+            }
+            if(eventLoop != null) {
+                eventLoop.stop();
+                selector.close();
+                serverChannel.close();
+            }
             InMemoryDatabase.getInstance().clear();
             logger.info("Redis server shut down.");
         } catch (IOException e) {
