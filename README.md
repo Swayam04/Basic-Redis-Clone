@@ -1,34 +1,55 @@
-[![progress-banner](https://backend.codecrafters.io/progress/redis/7a03f9d2-6a6b-40bf-8f55-9ec8b983654b)](https://app.codecrafters.io/users/codecrafters-bot?r=2qF)
+# Java Redis Clone
 
-This is a starting point for Java solutions to the
-["Build Your Own Redis" Challenge](https://codecrafters.io/challenges/redis).
+## Overview
+This is a basic Redis clone implemented in Java for educational purposes. It mimics core functionalities of Redis 2.x, handling multiple clients using an event-driven approach. This project was developed as part of a challenge, with all implementations done by the author based on a prompt from CodeCrafters.
 
-In this challenge, you'll build a toy Redis clone that's capable of handling
-basic commands like `PING`, `SET` and `GET`. Along the way we'll learn about
-event loops, the Redis protocol and more.
+## Key Features
+- **Event Loop for Concurrency**: Efficiently handles multiple client connections without the overhead of threading.
+- **RESP Protocol Support**: Full parsing and encoding support for all data types defined up to Redis 2.x.
+- **Core Commands**:
+   - Configuration: `ConfigCommand`
+   - Transaction control: `MultiCommand`, `ExecCommand`, `DiscardCommand`
+   - Basic operations: `SetCommand`, `GetCommand`, `IncrCommand`, `EchoCommand`
+   - Information retrieval: `InfoCommand`, `KeysCommand`
+   - Connection checks: `PingCommand`
+- **String Key-Value Storage**: Supports adding and retrieving string data.
+- **Transaction Management**: Implements `MULTI`, `EXEC`, and `DISCARD` for transactional command blocks.
+- **RDB File Parsing**: Supports loading data from RDB files.
+- **Replication**: Capable of running in master or slave mode and performing corresponding behaviors.
 
-**Note**: If you're viewing this repo on GitHub, head over to
-[codecrafters.io](https://codecrafters.io) to try the challenge.
+## Future Enhancements
+- **Streams and Lists**:
+   - Support for commands like `XRange`, `XAdd`, `XRead`, `LPush`, `RPop`, etc.
+- **Pub/Sub**:
+   - Implementation of `PUBLISH` and `SUBSCRIBE` for real-time messaging.
+- **Custom Data Structures**:
+   - Enhance performance for streams and lists with optimized data structures.
+- **Optimistic Locking**:
+   - Introduce the `WATCH` command to enable conditional execution.
+- **AOF Persistence**:
+   - Implement Append-Only File (AOF) persistence for durability.
 
-# Passing the first stage
+## Getting Started
+### Prerequisites
+- Java 17 or higher
+- Maven 3.x
 
-The entry point for your Redis implementation is in `src/main/java/Main.java`.
-Study and uncomment the relevant code, and push your changes to pass the first
-stage:
+### Installation and Running
+1. Clone the repository:
+   ```bash
+   git clone <repository-url>
+   ```
+2. Build the project:
+   ```bash
+   mvn clean install
+   ```
+3. Run the Redis server:
+   ```bash
+   java -jar target/redis-clone.jar
+   ```
 
-```sh
-git commit -am "pass 1st stage" # any msg
-git push origin master
-```
+### Usage
+Connect to the server using a Redis client or a custom script to send supported commands.
 
-That's all!
-
-# Stage 2 & beyond
-
-Note: This section is for stages 2 and beyond.
-
-1. Ensure you have `mvn` installed locally
-1. Run `./your_program.sh` to run your Redis server, which is implemented in
-   `src/main/java/Main.java`.
-1. Commit your changes and run `git push origin master` to submit your solution
-   to CodeCrafters. Test output will be streamed to your terminal.
+## Acknowledgments
+This project was inspired by a challenge from **CodeCrafters**. All implementations were done by the author, following the guidelines provided by the challenge.

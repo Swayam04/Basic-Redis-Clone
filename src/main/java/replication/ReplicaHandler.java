@@ -1,5 +1,6 @@
-package core;
+package replication;
 
+import core.RedisServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import resp.RespEncoder;
