@@ -30,7 +30,7 @@ public class ReplicationManager {
 
     public static void propagateToReplicas(RedisCommand redisCommand) {
         for (ClientState clientState : replicaClients) {
-            String response = RespEncoder.encode(redisCommand);
+            String response = RespEncoder.encodeCommand(redisCommand);
             log.info("propagating to replicas: {}", response);
             clientState.responseQueue().offer(response);
         }
