@@ -44,6 +44,7 @@ public class ReplicaHandler {
     }
 
     private void registerWithSelector(Selector selector) throws IOException {
+        masterSocketChannel.configureBlocking(false);
         ClientState clientState = new ClientState(
                 ByteBuffer.allocateDirect(RedisServer.currentConfig().bufferSize()),
                 ByteBuffer.allocateDirect(RedisServer.currentConfig().bufferSize()),
@@ -101,7 +102,7 @@ public class ReplicaHandler {
     public void connectToMaster() throws IOException {
         logger.info("Connecting to master at {}:{}", masterHost, masterPort);
         masterSocketChannel = SocketChannel.open(new InetSocketAddress(masterHost, masterPort));
-        masterSocketChannel.configureBlocking(false);
+        masterSocketChannel.configureBlocking(true);
         logger.info("Connected to master");
     }
 
