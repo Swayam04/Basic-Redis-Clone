@@ -23,7 +23,6 @@ public class PSyncCommand extends RedisCommand {
                 RedisServer.getReplicationInfo().getMasterReplOffset();
         String encodedResponse = RespEncoder.encode(response, true);
         String encodedRdb = RedisServer.getInitialState();
-        log.info("{}\n{}", encodedResponse, encodedRdb);
         return encodedResponse + encodedRdb;
     }
 

@@ -83,8 +83,7 @@ public final class RespEncoder {
 
     public static String encodeBase64Rdb(String base64String) {
         byte[] decodedBytes = Base64.getDecoder().decode(base64String);
-        String decodedString = new String(decodedBytes);
-        return "$" + decodedBytes.length + CRLF + decodedString;
+        return "$" + decodedBytes.length + CRLF + base64String;
     }
 
     public static String encodeCommand(RedisCommand redisCommand) {
