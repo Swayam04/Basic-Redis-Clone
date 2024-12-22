@@ -78,8 +78,8 @@ public class ReplicaHandler {
             String response = new String(buffer.array(), 0, bytesRead);
             if (response.contains("FULLRESYNC")) {
                 String[] responses = response.substring(1, response.length() - 4).split(" ");
-                masterReplId = responses[1].trim();
-                masterOffset = Integer.parseInt(responses[2].trim());
+//                masterReplId = responses[1].trim();
+//                masterOffset = Integer.parseInt(responses[2].trim());
             } else {
                 throw new IOException("Invalid PSYNC response: " + response);
             }
