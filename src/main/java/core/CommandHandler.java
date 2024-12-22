@@ -2,6 +2,8 @@ package core;
 
 import commands.CommandFactory;
 import commands.RedisCommand;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import replication.ReplicationManager;
 import resp.RespEncoder;
 import utils.ClientState;
@@ -15,6 +17,7 @@ import java.util.Set;
 
 public final class CommandHandler {
     private static final Set<String> transactionalCommandNames = Set.of("multi", "exec", "discard");
+    private static final Logger log = LoggerFactory.getLogger(CommandHandler.class);
 
     public static void handleCommand(ParsedCommand parsedCommand, ClientState state) {
         Deque<String> responseQueue = state.responseQueue();
@@ -39,6 +42,7 @@ public final class CommandHandler {
                 if(!state.isInTransaction()) {
                     if(RedisServer.getReplicationInfo().getRole().equals("master")) {
                         if(command.isWriteCommand()) {
+                            log.info("Write command received.");
                             ReplicationManager.propagateToReplicas(command);
                         }
                         responseQueue.offer(command.execute());

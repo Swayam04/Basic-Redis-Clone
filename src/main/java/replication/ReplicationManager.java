@@ -2,15 +2,17 @@ package replication;
 
 import commands.RedisCommand;
 import core.RedisServer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import resp.RespEncoder;
 import utils.ClientState;
-import utils.ParsedCommand;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class ReplicationManager {
     private static final List<ClientState> replicaClients = new ArrayList<>();
+    private static final Logger log = LoggerFactory.getLogger(ReplicationManager.class);
 
     public static List<ClientState> getReplicaClients() {
         return replicaClients;
@@ -28,6 +30,7 @@ public class ReplicationManager {
 
     public static void propagateToReplicas(RedisCommand redisCommand) {
         for (ClientState clientState : replicaClients) {
+            log.info("propagating to replicas: {}", clientState.getClientType());
             clientState.responseQueue().offer(RespEncoder.encodeCommand(redisCommand));
         }
     }
