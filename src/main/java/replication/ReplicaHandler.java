@@ -23,8 +23,6 @@ public class ReplicaHandler {
     private final int masterPort;
     private SocketChannel masterSocketChannel;
     private final ByteBuffer buffer;
-    private String masterReplId = "?";
-    private int masterOffset = -1;
 
     public ReplicaHandler() {
         String[] masterDetails = RedisServer.currentConfig().properties().get("replicaof").split(" ");
@@ -66,7 +64,7 @@ public class ReplicaHandler {
     }
 
     private void sendPSync() throws IOException {
-        String pSync = String.format("PSYNC %s %d", masterReplId, masterOffset);
+        String pSync = String.format("PSYNC %s %d", "?", -1);
         buffer.clear();
         buffer.put(RespEncoder.encode(List.of(pSync.split(" "))).getBytes());
         buffer.flip();
@@ -76,11 +74,7 @@ public class ReplicaHandler {
         int bytesRead = masterSocketChannel.read(buffer);
         if (bytesRead > 0) {
             String response = new String(buffer.array(), 0, bytesRead);
-            if (response.contains("FULLRESYNC")) {
-                String[] responses = response.substring(1, response.length() - 4).split(" ");
-//                masterReplId = responses[1].trim();
-//                masterOffset = Integer.parseInt(responses[2].trim());
-            } else {
+            if (!response.contains("FULLRESYNC")) {
                 throw new IOException("Invalid PSYNC response: " + response);
             }
         }
@@ -107,7 +101,7 @@ public class ReplicaHandler {
     public void connectToMaster() throws IOException {
         logger.info("Connecting to master at {}:{}", masterHost, masterPort);
         masterSocketChannel = SocketChannel.open(new InetSocketAddress(masterHost, masterPort));
-        masterSocketChannel.configureBlocking(true);
+        masterSocketChannel.configureBlocking(false);
         logger.info("Connected to master");
     }
 
