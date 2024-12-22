@@ -135,9 +135,9 @@ public class EventLoop {
                     CommandHandler.handleCommand(command.orElse(null), state);
                 }
                 readBuffer.compact();
-                if (!responseQueue.isEmpty()) {
-                    key.interestOps(SelectionKey.OP_WRITE);
-                }
+            }
+            if (bytesRead >= 0 && !responseQueue.isEmpty()) {
+                key.interestOps(SelectionKey.OP_WRITE);
             }
         } catch (IOException e) {
             logger.error("Error reading from client {}: ", getClientInfo(key), e);
