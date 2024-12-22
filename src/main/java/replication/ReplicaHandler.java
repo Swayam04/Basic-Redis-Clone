@@ -38,7 +38,6 @@ public class ReplicaHandler {
             registerWithSelector(selector);
         } catch (Exception e) {
             logger.error("Error starting replica handler", e);
-        } finally {
             stop();
         }
     }
