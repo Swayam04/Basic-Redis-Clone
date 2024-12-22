@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import resp.RespParser;
 import utils.ClientState;
+import utils.ClientType;
 import utils.ParsedCommand;
 
 import java.io.IOException;
@@ -135,9 +136,9 @@ public class EventLoop {
                     CommandHandler.handleCommand(command.orElse(null), state);
                 }
                 readBuffer.compact();
-            }
-            if (bytesRead >= 0 && !responseQueue.isEmpty()) {
-                key.interestOps(SelectionKey.OP_WRITE);
+                if (!responseQueue.isEmpty()) {
+                    key.interestOps(SelectionKey.OP_WRITE);
+                }
             }
         } catch (IOException e) {
             logger.error("Error reading from client {}: ", getClientInfo(key), e);
@@ -185,7 +186,11 @@ public class EventLoop {
 
                 responseQueue.removeFirst();
             }
-            key.interestOps(SelectionKey.OP_READ);
+            if(state.getClientType() == ClientType.REPLICA) {
+                key.interestOps(SelectionKey.OP_READ | SelectionKey.OP_WRITE);
+            } else {
+                key.interestOps(SelectionKey.OP_READ);
+            }
         } catch (IOException e) {
             logger.error("Error writing to client {}: ", getClientInfo(key), e);
             closeConnection(key);
