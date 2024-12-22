@@ -69,7 +69,7 @@ public class RedisServer {
                 logger.info("Redis server starting in replica mode");
                 replicaHandler.start(selector);
             } else {
-                initialState = RespEncoder.encodeBase64Rdb(globalConfig.properties().get("emptyRDB"));
+                initialState = RespEncoder.encodeSafeRdb(globalConfig.properties().get("emptyRDB"));
             }
             serverChannel.configureBlocking(false);
             serverChannel.socket().setReuseAddress(true);

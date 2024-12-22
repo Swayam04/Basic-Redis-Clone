@@ -2,6 +2,7 @@ package resp;
 
 import commands.RedisCommand;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
@@ -81,9 +82,16 @@ public final class RespEncoder {
         return encodedTransaction.toString();
     }
 
-    public static String encodeBase64Rdb(String base64String) {
-        byte[] decodedBytes = Base64.getDecoder().decode(base64String);
-        return "$" + decodedBytes.length + CRLF + base64String;
+    public static String encodeSafeRdb(String base64RdbContent) {
+        try {
+            byte[] rdbBytes = Base64.getDecoder().decode(base64RdbContent);
+            String binaryData = new String(rdbBytes, StandardCharsets.ISO_8859_1);
+
+            return "$" + rdbBytes.length + CRLF +
+                    binaryData + CRLF;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to encode RDB data", e);
+        }
     }
 
     public static String encodeCommand(RedisCommand redisCommand) {
