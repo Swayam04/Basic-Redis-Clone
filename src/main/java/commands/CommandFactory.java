@@ -17,6 +17,7 @@ public final class CommandFactory {
             case "config" -> new ConfigCommand(parsedCommand.name().toLowerCase(), parsedCommand.args());
             case "keys" -> new KeysCommand(parsedCommand.name().toLowerCase(), parsedCommand.args());
             case "info" -> new InfoCommand(parsedCommand.name().toLowerCase(), parsedCommand.args());
+            case "replconf" -> new ReplConfCommand(parsedCommand.name().toLowerCase(), parsedCommand.args());
             default -> throw new UnsupportedOperationException("Unknown command: " + parsedCommand.name());
         };
     }

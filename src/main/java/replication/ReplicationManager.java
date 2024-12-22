@@ -1,6 +1,7 @@
 package replication;
 
 import commands.RedisCommand;
+import core.RedisServer;
 import resp.RespEncoder;
 import utils.ClientState;
 import utils.ParsedCommand;
@@ -17,10 +18,12 @@ public class ReplicationManager {
 
     public static void addReplicaClient(ClientState clientState) {
         replicaClients.add(clientState);
+        RedisServer.getReplicationInfo().addConnectedSlaves();
     }
 
     public static void removeReplicaClient(ClientState clientState) {
         replicaClients.remove(clientState);
+        RedisServer.getReplicationInfo().addConnectedSlaves(-1);
     }
 
     public static void propagateToReplicas(RedisCommand redisCommand) {
