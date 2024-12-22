@@ -84,7 +84,6 @@ public class EventLoop {
                     logger.info("Reading from client: {}", getClientInfo(key));
                     read(key);
                 } else if(key.isWritable()) {
-                    logger.info("Writing to client: {}", getClientInfo(key));
                     write(key);
                 }
             } catch (IOException e) {
