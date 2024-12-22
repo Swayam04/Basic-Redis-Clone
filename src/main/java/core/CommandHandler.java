@@ -32,7 +32,7 @@ public final class CommandHandler {
                     }
                 }
                 if (command.isWriteCommand()) {
-                    if (RedisServer.getReplicationInfo().getRole().equals("replica") && state.getClientType() != ClientType.MASTER) {
+                    if (RedisServer.getReplicationInfo().getRole().equals("slave") && state.getClientType() != ClientType.MASTER) {
                         throw new IllegalArgumentException("Replica node cannot accept writes.");
                     }
                 }
