@@ -88,7 +88,7 @@ public final class RespEncoder {
             String binaryData = new String(rdbBytes, StandardCharsets.ISO_8859_1);
 
             return "$" + rdbBytes.length + CRLF +
-                    binaryData + CRLF;
+                    binaryData;
         } catch (Exception e) {
             throw new RuntimeException("Failed to encode RDB data", e);
         }
