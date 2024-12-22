@@ -1,11 +1,15 @@
 package commands;
 
 import core.RedisServer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import resp.RespEncoder;
 
 import java.util.List;
 
 public class PSyncCommand extends RedisCommand {
+
+    private static final Logger log = LoggerFactory.getLogger(PSyncCommand.class);
 
     public PSyncCommand(String name, List<String> args) {
         super(name, args);
@@ -19,6 +23,7 @@ public class PSyncCommand extends RedisCommand {
                 RedisServer.getReplicationInfo().getMasterReplOffset();
         String encodedResponse = RespEncoder.encode(response, true);
         String encodedRdb = RedisServer.getInitialState();
+        log.info("{}\n{}", encodedResponse, encodedRdb);
         return encodedResponse + encodedRdb;
     }
 
