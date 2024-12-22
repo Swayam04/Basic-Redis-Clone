@@ -37,6 +37,16 @@ public class SetCommand extends RedisCommand {
     }
 
     @Override
+    public boolean isWriteCommand() {
+        return true;
+    }
+
+    @Override
+    public boolean isReplicaCommand() {
+        return false;
+    }
+
+    @Override
     public String execute() {
         String key = args.get(0);
         String value = args.get(1);

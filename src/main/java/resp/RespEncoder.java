@@ -1,5 +1,9 @@
 package resp;
 
+import commands.RedisCommand;
+
+import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 
 public final class RespEncoder {
@@ -75,5 +79,18 @@ public final class RespEncoder {
             encodedTransaction.append(item);
         }
         return encodedTransaction.toString();
+    }
+
+    public static String encodeBase64Rdb(String base64String) {
+        byte[] decodedBytes = Base64.getDecoder().decode(base64String);
+        String decodedString = new String(decodedBytes);
+        return "$" + decodedString.length() + CRLF + decodedString;
+    }
+
+    public static String encodeCommand(RedisCommand redisCommand) {
+        List<String> command = new ArrayList<>();
+        command.add(redisCommand.getName());
+        command.addAll(redisCommand.getArgs());
+        return encodeList(command);
     }
 }

@@ -12,6 +12,7 @@ public final class ClientState {
     private final Deque<String> responseQueue;
     private final Queue<RedisCommand> transactionQueue;
     private boolean transactionState = false;
+    private ClientType clientType = ClientType.CLIENT;
 
     public ClientState(ByteBuffer readBuffer, ByteBuffer writeBuffer, Deque<String> responseQueue, Queue<RedisCommand> transactionQueue) {
         this.readBuffer = readBuffer;
@@ -47,6 +48,14 @@ public final class ClientState {
     public void endTransaction() {
         this.transactionState = false;
         this.transactionQueue.clear();
+    }
+
+    public void setClientType(ClientType clientType) {
+        this.clientType = clientType;
+    }
+
+    public ClientType getClientType() {
+        return clientType;
     }
 
 }

@@ -19,6 +19,16 @@ public class IncrCommand extends RedisCommand {
     }
 
     @Override
+    public boolean isWriteCommand() {
+        return true;
+    }
+
+    @Override
+    public boolean isReplicaCommand() {
+        return false;
+    }
+
+    @Override
     public String execute() {
         try {
             String key = args.getFirst();

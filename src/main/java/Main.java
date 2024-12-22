@@ -25,7 +25,7 @@ public class Main {
 
     private static ServerConfig parseConfig(String[] args) {
         Map<String, String> properties = new HashMap<>();
-
+        properties.put("emptyRDB", "UkVESVMwMDEx+glyZWRpcy12ZXIFNy4yLjD6CnJlZGlzLWJpdHPAQPoFY3RpbWXCbQi8ZfoIdXNlZC1tZW3CsMQQAPoIYW9mLWJhc2XAAP/wbjv+wP9aog==");
         for (int i = 0; i < args.length; i++) {
             switch (args[i]) {
                 case "--port":

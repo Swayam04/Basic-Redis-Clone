@@ -18,6 +18,16 @@ public class PingCommand extends RedisCommand {
     }
 
     @Override
+    public boolean isWriteCommand() {
+        return false;
+    }
+
+    @Override
+    public boolean isReplicaCommand() {
+        return false;
+    }
+
+    @Override
     public String execute() {
         if(args.size() == 1) {
             return RespEncoder.encode(args.getFirst(), true);

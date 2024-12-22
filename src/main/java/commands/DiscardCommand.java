@@ -20,6 +20,16 @@ public class DiscardCommand extends RedisCommand {
     }
 
     @Override
+    public boolean isWriteCommand() {
+        return false;
+    }
+
+    @Override
+    public boolean isReplicaCommand() {
+        return false;
+    }
+
+    @Override
     public String execute() {
         if(!inTransaction) {
             return RespEncoder.encode(new IllegalStateException("DISCARD without MULTI"));

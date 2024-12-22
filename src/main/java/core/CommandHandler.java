@@ -2,8 +2,10 @@ package core;
 
 import commands.CommandFactory;
 import commands.RedisCommand;
+import replication.ReplicationManager;
 import resp.RespEncoder;
 import utils.ClientState;
+import utils.ClientType;
 import utils.ParsedCommand;
 
 import java.util.ArrayList;
@@ -23,24 +25,53 @@ public final class CommandHandler {
             RedisCommand command = CommandFactory.getCommand(parsedCommand, state.isInTransaction());
             try {
                 command.checkSyntax();
+                if (command.isReplicaCommand()) {
+                    if (state.getClientType() != ClientType.REPLICA) {
+                        state.setClientType(ClientType.REPLICA);
+                        ReplicationManager.addReplicaClient(state);
+                    }
+                }
+                if (command.isWriteCommand()) {
+                    if (RedisServer.getReplicationInfo().getRole().equals("replica") && state.getClientType() != ClientType.MASTER) {
+                        throw new IllegalArgumentException("Replica node cannot accept writes.");
+                    }
+                }
                 if(!state.isInTransaction()) {
-                    responseQueue.offer(command.execute());
-                    if(command.getName().equalsIgnoreCase("multi")) {
-                        state.setInTransaction();
+                    if(RedisServer.getReplicationInfo().getRole().equals("master")) {
+                        if(command.isWriteCommand()) {
+                            ReplicationManager.propagateToReplicas(command);
+                        }
+                        responseQueue.offer(command.execute());
+                        if(command.getName().equalsIgnoreCase("multi")) {
+                            state.setInTransaction();
+                        }
+                    } else {
+                        String executedResponse = command.execute();
+                        if(!command.isWriteCommand()) {
+                            responseQueue.offer(executedResponse);
+                        }
                     }
                 } else {
-                    if(!transactionalCommandNames.contains(command.getName().toLowerCase())) {
+                    String commandName = command.getName().toLowerCase();
+                    if(!transactionalCommandNames.contains(commandName)) {
                         state.transactionQueue().offer(command);
                         responseQueue.offer(RespEncoder.encode("QUEUED", true));
-                    } else if(command.getName().equalsIgnoreCase("multi")) {
+                    } else if(commandName.equals("multi")) {
                         responseQueue.offer(command.execute());
-                    } else if(command.getName().equalsIgnoreCase("discard")) {
+                    } else if(commandName.equals("discard")) {
                         responseQueue.offer(command.execute());
                         endTransaction(state);
-                    } else if(command.getName().equalsIgnoreCase("exec")) {
+                    } else if(commandName.equals("exec")) {
                         List<String> encodedCommands = new ArrayList<>();
-                        while(!state.transactionQueue().isEmpty()) {
-                            encodedCommands.add(state.transactionQueue().poll().execute());
+                        while (!state.transactionQueue().isEmpty()) {
+                            RedisCommand queuedCmd = state.transactionQueue().poll();
+                            String txnResult = queuedCmd.execute();
+                            encodedCommands.add(txnResult);
+                            if (queuedCmd.isWriteCommand()
+                                    && RedisServer.getReplicationInfo().getRole().equals("master")
+                                    && state.getClientType() == ClientType.CLIENT) {
+                                ReplicationManager.propagateToReplicas(queuedCmd);
+                            }
                         }
                         responseQueue.offer(RespEncoder.encodeTransaction(encodedCommands));
                         endTransaction(state);

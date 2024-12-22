@@ -31,7 +31,7 @@ public class ReplicationInfo {
 
     private void setRole() {
         if(RedisServer.currentConfig().properties().containsKey("replicaof")) {
-            role = "slave";
+            role = "replica";
             return;
         }
         role = "master";

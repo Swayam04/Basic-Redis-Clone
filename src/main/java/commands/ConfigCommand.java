@@ -90,4 +90,14 @@ public class ConfigCommand extends RedisCommand {
             throw new IllegalArgumentException("wrong number of arguments for '" + name + "' command");
         }
     }
+
+    @Override
+    public boolean isWriteCommand() {
+        return false;
+    }
+
+    @Override
+    public boolean isReplicaCommand() {
+        return false;
+    }
 }

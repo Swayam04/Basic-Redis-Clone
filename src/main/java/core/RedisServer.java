@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import replication.ReplicaHandler;
 import replication.ReplicationInfo;
+import resp.RespEncoder;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -22,6 +23,7 @@ public class RedisServer {
     private final EventLoop eventLoop;
     private final ReplicaHandler replicaHandler;
     private final AtomicBoolean isRunning;
+    private String initialState = "";
 
     public record ServerConfig(int port, int bufferSize, long timeout, Map<String, String> properties) {
     }
@@ -61,7 +63,9 @@ public class RedisServer {
         try {
             if(replicaHandler != null) {
                 logger.info("Redis server starting in replica mode");
-                replicaHandler.start();
+                replicaHandler.start(selector);
+            } else {
+                initialState = RespEncoder.encodeBase64Rdb(globalConfig.properties().get("emptyRDB"));
             }
             serverChannel.configureBlocking(false);
             serverChannel.socket().setReuseAddress(true);

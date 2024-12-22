@@ -15,7 +15,10 @@ public abstract class RedisCommand {
     public String getName() {
         return name;
     }
+    public List<String> getArgs() {return args;}
 
     public abstract String execute();
     public abstract void checkSyntax();
+    public abstract boolean isWriteCommand();
+    public abstract boolean isReplicaCommand();
 }

@@ -19,6 +19,16 @@ public class GetCommand extends RedisCommand {
     }
 
     @Override
+    public boolean isWriteCommand() {
+        return false;
+    }
+
+    @Override
+    public boolean isReplicaCommand() {
+        return false;
+    }
+
+    @Override
     public String execute() {
         return RespEncoder.encode(InMemoryDatabase.getInstance().getStringData(args.getFirst()));
     }

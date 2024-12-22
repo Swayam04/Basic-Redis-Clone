@@ -76,7 +76,6 @@ public class EventLoop {
                 if(!key.isValid()) {
                     continue;
                 }
-
                 if(key.isAcceptable()) {
                     logger.info("Accepting new connection");
                     acceptConnection(key);
